@@ -323,3 +323,15 @@ class TestExport:
         ]):
             with pytest.raises(SystemExit):
                 main()
+
+    def test_export_without_data_flag_exits(self, simple_csv):
+        from unittest.mock import patch
+        from analyzer import main
+        with patch("sys.argv", ["analyzer", str(simple_csv), "--export", "out.csv"]):
+            with pytest.raises(SystemExit):
+                main()
+
+    def test_export_bad_path_exits(self, simple_csv, tmp_path):
+        headers, rows = load_csv(simple_csv)
+        with pytest.raises(SystemExit):
+            export_summary(headers, rows, tmp_path / "nonexistent_dir" / "out.csv")

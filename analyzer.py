@@ -128,10 +128,13 @@ def _fmt_num(n):
 # Writes a list of dictionaries to a CSV file at the given path.
 # Used by all three export functions below as a shared helper.
 def _write_export(filepath, export_rows, fieldnames):
-    with open(filepath, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(export_rows)
+    try:
+        with open(filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(export_rows)
+    except OSError as e:
+        _exit_error(f"Could not write to '{filepath}': {e.strerror}.")
 
 
 # Saves the --summary data to a CSV file with two columns: "column" and "type".
@@ -263,7 +266,13 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.summary and args.column is None and not args.missing:
+    no_data_flag = not args.summary and args.column is None and not args.missing
+    if no_data_flag and args.export:
+        _exit_error(
+            "--export requires a data flag.\n"
+            "Use it with --summary, --column COLUMN, or --missing."
+        )
+    if no_data_flag:
         parser.print_help()
         sys.exit(0)
 

@@ -2,26 +2,41 @@
 
 A command-line tool for exploring CSV files with styled terminal output. Uses only Python built-ins plus [Rich](https://github.com/Textualize/rich) for formatting.
 
-## Features
+## What it does
 
-- **`--summary`** — row count, column names, and inferred data types in a styled table
-- **`--column COLUMN`** — min, max, and average for any numeric column in a styled panel
-- **`--missing`** — missing value counts per column, color-coded red/green
-- **`--export FILE`** — save any command's output to a CSV file
-- Flags can be combined in a single invocation
-- Error messages displayed in bold red; success messages in green
-- Graceful error messages for missing files, bad extensions, non-numeric columns, and encoding issues
+Point it at any CSV file and use flags to instantly understand your data:
+
+- **`--summary`** — see row count, column names, and inferred data types
+- **`--column COLUMN`** — get min, max, and average for any numeric column
+- **`--missing`** — find which columns have blank values and how many
+- **`--export FILE`** — save any result to a new CSV file
+
+All output is styled with colors and tables in the terminal. Errors appear in bold red with a helpful message explaining what went wrong.
+
+## Requirements
+
+- Python 3.9 or newer
+- pip (comes with Python)
+
+Check your Python version:
+```bash
+python3 --version
+```
 
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/data-analyzer-cli.git
+git clone https://github.com/knpham00/data-analyzer-cli.git
 cd data-analyzer-cli
 pip install -r requirements.txt
 ```
 
-## Usage
+Verify it works:
+```bash
+python3 analyzer.py --help
+```
 
+You should see:
 ```
 usage: analyzer [-h] [--summary] [--column COLUMN] [--missing] [--export FILE] file
 
@@ -38,11 +53,21 @@ options:
   --export FILE    Save output data to a CSV file (use with one data flag)
 ```
 
-### Examples
+## Usage
 
-**Show a summary of the file:**
+All commands follow this pattern:
 ```bash
-python analyzer.py data.csv --summary
+python3 analyzer.py YOUR_FILE.csv --flag
+```
+
+---
+
+### `--summary`
+
+Shows the total number of rows and columns, and the inferred data type for each column.
+
+```bash
+python3 analyzer.py data.csv --summary
 ```
 ```
 ╭─── Summary ───╮
@@ -59,9 +84,16 @@ python analyzer.py data.csv --summary
 ╰──────────────────────┴──────────╯
 ```
 
-**Compute stats for a numeric column:**
+Types are color-coded: **cyan** for integer, **yellow** for float, **white** for string.
+
+---
+
+### `--column COLUMN`
+
+Shows the count, minimum, maximum, and average for a numeric column. Replace `COLUMN` with the exact column name.
+
 ```bash
-python analyzer.py data.csv --column salary
+python3 analyzer.py data.csv --column salary
 ```
 ```
 ╭─── Column: salary ───╮
@@ -73,9 +105,16 @@ python analyzer.py data.csv --column salary
 ╰─────────────────────────────╯
 ```
 
-**Find missing values:**
+Blank cells are skipped — they are not counted as zero.
+
+---
+
+### `--missing`
+
+Shows how many blank cells each column has. Useful for spotting incomplete data before analysis.
+
 ```bash
-python analyzer.py data.csv --missing
+python3 analyzer.py data.csv --missing
 ```
 ```
 ╭──────────────────────┬─────────╮
@@ -90,39 +129,89 @@ python analyzer.py data.csv --missing
 
 Total missing values: 9
 ```
-*(missing counts appear in red, zeros in green)*
 
-**Export output to a CSV file:**
+Counts above zero appear in **red**. Zero counts appear in **green**.
+
+---
+
+### `--export FILE`
+
+Saves the result to a plain CSV file — no colors or formatting, just data. Use it alongside one data flag.
+
 ```bash
-python analyzer.py data.csv --summary --export summary.csv
-python analyzer.py data.csv --column salary --export salary_stats.csv
-python analyzer.py data.csv --missing --export missing.csv
+python3 analyzer.py data.csv --summary --export summary.csv
 ```
 ```
+╭─── Summary ───╮
+│ 1000 rows · 5 columns │
+╰───────────────╯
+... (table shown in terminal as normal) ...
+
 ✓ Exported to summary.csv
 ```
 
-The exported CSV contains plain data with no formatting — ready to open in Excel or any other tool.
-
-**Combine flags:**
-```bash
-python analyzer.py data.csv --summary --missing
+The exported `summary.csv` will contain:
 ```
+column,type
+id,integer
+name,string
+age,integer
+salary,float
+department,string
+```
+
+Works with all three data flags:
+```bash
+python3 analyzer.py data.csv --column salary --export salary_stats.csv
+python3 analyzer.py data.csv --missing --export missing.csv
+```
+
+---
+
+### Combining flags
+
+`--summary` and `--missing` can be combined in one command:
+
+```bash
+python3 analyzer.py data.csv --summary --missing
+```
+```
+╭─── Summary ───╮
+│ 1000 rows · 5 columns │
+╰───────────────╯
+╭──────────────────────┬──────────╮
+│ Column               │ Type     │
+...
+╰──────────────────────┴──────────╯
+
+╭──────────────────────┬─────────╮
+│ Column               │ Missing │
+...
+╰──────────────────────┴─────────╯
+
+Total missing values: 9
+```
+
+Note: `--export` can only be used with one data flag at a time.
+
+---
 
 ## Error handling
 
-All errors are displayed in bold red. `--export` requires exactly one data flag.
+All errors print in bold red and exit with a helpful message. No tracebacks.
 
 | Situation | Message |
 |-----------|---------|
 | File not found | `Error: File 'x.csv' not found.` |
-| Wrong extension | `Error: 'x.txt' is not a CSV file.` |
-| Empty / header-only file | `Error: CSV file is empty or has no header row.` |
-| Unknown column | `Error: Column 'x' not found. Available columns: …` |
-| Non-numeric column with `--column` | `Error: Column 'name' contains non-numeric value 'Alice' at row 2.` |
-| All values missing in column | `Error: Column 'x' has no numeric values.` |
-| Non-UTF-8 encoding | `Error: Could not decode file. Ensure it is UTF-8 encoded.` |
-| `--export` with multiple data flags | `Error: --export requires exactly one data flag.` |
+| Wrong file extension | `Error: 'x.txt' is not a CSV file.` |
+| Empty file | `Error: CSV file is empty or has no header row.` |
+| Column name doesn't exist | `Error: Column 'x' not found. Available columns: …` |
+| Column contains text, not numbers | `Error: Column 'name' contains non-numeric value 'Alice' at row 2.` |
+| Column is entirely blank | `Error: Column 'x' has no numeric values.` |
+| File uses non-UTF-8 encoding | `Error: Could not decode file. Ensure it is UTF-8 encoded.` |
+| `--export` used without a data flag | `Error: --export requires a data flag.` |
+| `--export` used with multiple data flags | `Error: --export requires exactly one data flag.` |
+| Export path doesn't exist | `Error: Could not write to 'path/out.csv': No such file or directory.` |
 
 ## Running tests
 
@@ -131,14 +220,14 @@ pip install -r requirements.txt pytest
 pytest tests/ -v
 ```
 
-The test suite covers:
+The test suite (34 tests) covers:
 
-- CSV loading (headers, rows, error paths)
-- Summary: row count, column names, type inference (string / integer / float)
-- Column stats: min, max, average, missing-value exclusion, edge cases
-- Missing-value counts: per-column accuracy, all-blank columns
-- CLI output format for each flag
-- Export: file creation, CSV content correctness for all three export types, multiple-flags error
+- CSV loading — headers, rows, missing file, wrong extension, empty file
+- Summary — row count, column names, type inference for integer/float/string
+- Column stats — min, max, average, blank-cell exclusion, edge cases
+- Missing value counts — per-column accuracy, all-blank columns, whitespace cells
+- Export — file creation, CSV content for all three export types, error cases
+- CLI output — correct display for each flag
 
 ## Project structure
 
@@ -147,7 +236,7 @@ data-analyzer-cli/
 ├── analyzer.py               # Main CLI tool
 ├── requirements.txt          # Python dependencies (rich)
 ├── tests/
-│   └── test_analyzer.py      # Pytest test suite (32 tests)
+│   └── test_analyzer.py      # Pytest test suite (34 tests)
 ├── .github/
 │   └── workflows/
 │       └── ci.yml            # GitHub Actions CI
@@ -157,7 +246,7 @@ data-analyzer-cli/
 
 ## CI
 
-GitHub Actions runs the test suite on Python 3.9, 3.10, 3.11, and 3.12 on every push and pull request. Dependencies from `requirements.txt` are installed before each run. A separate lint job runs [ruff](https://docs.astral.sh/ruff/) for style checks.
+GitHub Actions runs the full test suite on Python 3.9, 3.10, 3.11, and 3.12 on every push and pull request. A separate lint job runs [ruff](https://docs.astral.sh/ruff/) for style checks. No manual steps are needed — all checks run automatically.
 
 ## License
 
