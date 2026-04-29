@@ -293,7 +293,7 @@ class TestExport:
         lines = out.read_text().splitlines()
         assert lines[0] == "column,missing"
         # age has 2 missing values
-        age_line = next(l for l in lines if l.startswith("age,"))
+        age_line = next(line for line in lines if line.startswith("age,"))
         assert age_line == "age,2"
 
     def test_export_column_correct_stats(self, simple_csv, tmp_path):
@@ -312,7 +312,7 @@ class TestExport:
         headers, rows = load_csv(simple_csv)
         export_column(headers, rows, "score", out)
         lines = out.read_text().splitlines()
-        count_line = next(l for l in lines if l.startswith("count,"))
+        count_line = next(line for line in lines if line.startswith("count,"))
         assert count_line == "count,3"
 
     def test_export_multiple_flags_exits(self, simple_csv):
